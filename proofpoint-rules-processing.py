@@ -1,19 +1,22 @@
 #BASIC PROOFPOINT RULES PROCESSING
 
 import re
+import shlex
 
 def main():
     # example syntax criteria
-    #input_string = '( efficacy || quality || sophistication || transparency || criteria || integrity ) FB~5 ( ( rating* NPB ( fitch || draft ) ) || outcome || result || level || score || assessment || decision || analysis ) FB~5 ( not || "didn\'t" || "didn t" || didnt || "wasn\'t" || "wasn t" || wasnt || "isn\'t" || isnt || "isn t" ) FB~5 ( my || our || their || the || we ) FB~5 ( expect* || require* || anticipat* )'
+    # example 1
+    input_string = '( efficacy || quality || sophistication || transparency || criteria || integrity ) FB~5 ( ( rating* NPB ( fitch || draft ) ) || outcome || result || level || score || assessment || decision || analysis ) FB~5 ( not || "didn\'t" || "didn t" || didnt || "wasn\'t" || "wasn t" || wasnt || "isn\'t" || isnt || "isn t" ) FB~5 ( my || our || their || the || we ) FB~5 ( expect* || require* || anticipat* )'
+    # example 2 
+    #input_string = '((rating||ratings)NPB (fitch || draft || london ) ) FB~5 ( has || contain* || bunch || filled || riddled || have || all|| full||include* || sent || publish* || issued || release* ) FB~5 ( inaccuracies || inaccurate || ( errors NPB ( human) ) || ( mistakes NPB ( "subject  to" ) ) || miscalculations || oversights )'
 
     # user input
-    input_string = input("Input syntax criteria: ")
+    #input_string = input("Input syntax criteria: ")
 
-    # detect and convert quoted phrases to regex
-    pattern = re.compile(r'"([a-zA-Z0-9]+)([^\w])([a-zA-Z0-9]+)"')
-    input_string = pattern.sub(r'\1\\W*\3', input_string)
+    formatted_input = format(input_string)
+    print(f"Corrected Format: {formatted_input}")
 
-    input_array = input_string.split(" ")
+    input_array = shlex.split(formatted_input)
     print(f"\nSplit: {input_array}\n")
 
     postfix_stack = toPostFix(input_array)
@@ -24,6 +27,18 @@ def main():
     final_regex = final_regex.replace("\\brating|ratings\\b", "\\b(rating(s)?)\\b")
     final_regex = final_regex.replace("fitch", "(F|f)itch")
     print(f"Final Regex:\n{final_regex}")
+
+def format(text):
+    text = text.replace("||", "|")
+
+    # surround parenthesis and OR statements with spaces if not already 
+    pattern = re.compile(r'(?<!\s)([()\|]])|(?!\s)([()\|])')
+    spaced_text = pattern.sub(lambda m: f" {m.group(0)} ", text)
+
+    # remove duplicate spaces created by replacement
+    spaced_text = re.sub(r'\s+(?=([^"]*"[^"]*")*[^"]*$)', " ", spaced_text).strip()
+
+    return spaced_text
 
 # convert criteria using shunting yard algorithm
 def toPostFix(array):
@@ -40,7 +55,7 @@ def toPostFix(array):
             asterisk_index = element.index("*")
             element = f"{element[:asterisk_index]}\w*{element[asterisk_index+1:]}"
 
-        if element == "||":
+        if element == "|":
             operator_stack.append("|")
 
         elif element == "(":
@@ -115,9 +130,9 @@ def eval(postfix_stack):
         else:
             stack.append(element)
 
-        #print(f"ELEMENT : {element}")
-        #print(f"POSTFIX_STACK: {postfix_stack}")
-        #print(f"STACK: {stack}\n")
+        print(f"ELEMENT : {element}")
+        print(f"POSTFIX_STACK: {postfix_stack}")
+        print(f"STACK: {stack}\n")
     
     # return final regex
     return stack.pop()
